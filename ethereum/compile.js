@@ -4,7 +4,7 @@ const fs = require("fs-extra");
 
 const buildPath = path.resolve(__dirname, "build");
 fs.removeSync(buildPath);
-
+console.log(solc.version())
 const campaignPath = path.resolve(__dirname, "contracts", "CarSale.sol");
 const source = fs.readFileSync(campaignPath, "utf8");
 const output = solc.compile(source, 1).contracts;
