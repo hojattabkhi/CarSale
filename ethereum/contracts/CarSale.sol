@@ -1,5 +1,19 @@
 pragma solidity ^0.4.17;
 
+contract CarSaleFactory {
+    address[] public deployedCarSales;
+
+    function createCarSale(string memory carMake, string memory carModel, string memory carRegistrationNumber,
+        uint carManufactureYear, int carMileage) public {
+        address newCarSale = new CarSale(carMake, carModel, carRegistrationNumber, carManufactureYear, carMileage, msg.sender);
+        deployedCarSales.push(newCarSale);
+    }
+
+    function getDeployedCarSales() public view returns (address[]) {
+        return deployedCarSales;
+    }
+}
+
 contract CarSale {
     // A car's make is the brand of the vehicle, while the model refers to the name of a car product
     // For example,Toyota is a car make and Camry is a car model.
@@ -7,8 +21,9 @@ contract CarSale {
         string make;
         string model;
         string registrationNumber;
-        uint manufactureDate;
+        uint manufactureYear;
         int mileage;
+        address owner;
     }
 
     Car public car;
@@ -16,43 +31,55 @@ contract CarSale {
     address public purchaser;
     uint price;
     string comment;
-    bool seenAndCheckedByPurchaser;
-    bool finalized;
+    bool sold;
 
-    function CarSale(uint _price, string memory carMake, string memory carModel, string memory carRegistrationNumber, uint carManufactureDate, int carMileage) public {
+    function CarSale(string memory carMake, string memory carModel, string memory carRegistrationNumber,
+        uint carManufactureYear, int carMileage, address creator) public {
         car = Car({
-        make : carMake,
-        model : carModel,
-        registrationNumber : carRegistrationNumber,
-        manufactureDate : carManufactureDate,
-        mileage : carMileage
+            make : carMake,
+            model : carModel,
+            registrationNumber : carRegistrationNumber,
+            manufactureYear : carManufactureYear,
+            mileage : carMileage,
+            owner: creator
         });
-        vendor = msg.sender;
-        price = _price;
     }
 
     modifier restricted() {
-        require(msg.sender == vendor);
-        _;
-    }
-    modifier notFinalized() {
-        require(finalized == false);
+        require(msg.sender == car.owner);
         _;
     }
 
-    function submitBuyProposal() public notFinalized payable{
+    modifier purchasable() {
+        require(price != 0);
+        require(vendor != 0);
+        require(sold == false);
+        _;
+    }
+
+    function sell(uint _price, string _comment) public restricted{
+        price = _price;
+        comment = _comment;
+        vendor = msg.sender;
+    }
+
+    function buy() public purchasable payable{
         require(msg.value == price);
         purchaser = msg.sender;
-        seenAndCheckedByPurchaser = true;
+        sold = true;
+        vendor.transfer(msg.value);
+        car.owner = msg.sender;
     }
 
-    function sell() public restricted notFinalized{
-        require(seenAndCheckedByPurchaser == true);
-        vendor.transfer(address(this).balance);
-        finalized = true;
+    function isSold() public view returns (bool){
+        return sold;
     }
 
-    function setComment(string memory _comment) public notFinalized{
-        comment = _comment;
+    function getCar() public view returns (string ,string ,string, uint, address, uint, bool){
+        return (car.make, car.model, car.registrationNumber, car.manufactureYear, car.owner, price, sold);
+    }
+
+    function verifyOwner() public view returns(bool){
+        return car.owner == msg.sender;
     }
 }
