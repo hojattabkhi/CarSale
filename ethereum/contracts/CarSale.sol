@@ -1,11 +1,11 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.26;
 
 contract CarSaleFactory {
     address[] public deployedCarSales;
 
     function createCarSale(string memory carMake, string memory carModel, string memory carRegistrationNumber,
-        uint carManufactureYear, int carMileage) public {
-        address newCarSale = new CarSale(carMake, carModel, carRegistrationNumber, carManufactureYear, carMileage, msg.sender);
+        uint carManufactureYear) public {
+        address newCarSale = new CarSale(carMake, carModel, carRegistrationNumber, carManufactureYear, msg.sender);
         deployedCarSales.push(newCarSale);
     }
 
@@ -29,57 +29,59 @@ contract CarSale {
     Car public car;
     address public vendor;
     address public purchaser;
-    uint price;
-    string comment;
-    bool sold;
+    uint public price;
+    string public comment;
+    bool public isPutUpForSale;
+    address[] public previousOwners;
 
-    function CarSale(string memory carMake, string memory carModel, string memory carRegistrationNumber,
-        uint carManufactureYear, int carMileage, address creator) public {
+    constructor(string memory carMake, string memory carModel, string memory carRegistrationNumber,
+        uint carManufactureYear, address creator) public {
         car = Car({
             make : carMake,
             model : carModel,
             registrationNumber : carRegistrationNumber,
             manufactureYear : carManufactureYear,
-            mileage : carMileage,
+            mileage : 0,
             owner: creator
         });
     }
 
-    modifier restricted() {
-        require(msg.sender == car.owner);
+    modifier shouldBeOwner() {
+        require(msg.sender == car.owner, "msg.sender should be car owner");
         _;
     }
 
     modifier purchasable() {
-        require(price != 0);
-        require(vendor != 0);
-        require(sold == false);
+        require(price != 0, "price should be set");
+        require(vendor != 0, "vendor should be set");
+        require(isPutUpForSale == true, "car should be put up for sale");
         _;
     }
 
-    function sell(uint _price, string _comment) public restricted{
+    function putUpForSale(int carMileage, uint _price, string _comment) public shouldBeOwner{
+        require(carMileage >= car.mileage, "car mileage should be Ascending");
+        car.mileage = carMileage;
         price = _price;
         comment = _comment;
         vendor = msg.sender;
+        isPutUpForSale = true;
     }
 
     function buy() public purchasable payable{
         require(msg.value == price);
+        require(msg.sender != car.owner);
         purchaser = msg.sender;
-        sold = true;
+        isPutUpForSale = false;
         vendor.transfer(msg.value);
         car.owner = msg.sender;
-    }
-
-    function isSold() public view returns (bool){
-        return sold;
-    }
-
-    function getCar() public view returns (string ,string ,string, uint, address, uint, bool){
-        return (car.make, car.model, car.registrationNumber, car.manufactureYear, car.owner, price, sold);
+        previousOwners.push(vendor);
     }
 
     function verifyOwner() public view returns(bool){
         return car.owner == msg.sender;
+    }
+
+    function getPreviousOwners() public view returns (address[]) {
+        return previousOwners;
     }
 }

@@ -1,6 +1,6 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const Web3 = require('web3');
-const compiledCarSale = require('./build/CarSale.json');
+const compiledFactory = require('./build/CarSaleFactory.json');
 
 const provider = new HDWalletProvider(
     'pistol total physical bleak bar gossip hope nephew horror render focus face',
@@ -14,10 +14,10 @@ const deploy = async () => {
     console.log('Attempting to deploy from account', accounts[0]);
 
     const result = await new web3.eth.Contract(
-        JSON.parse(compiledCarSale.interface)
+        JSON.parse(compiledFactory.interface)
     )
-        .deploy({ data: compiledCarSale.bytecode })
-        .send({ gas: '1000000', from: accounts[0] });
+        .deploy({ data: compiledFactory.bytecode })
+        .send({ gas: '2000000', from: accounts[0] });
 
     console.log('Contract deployed to', result.options.address);
     provider.engine.stop();
