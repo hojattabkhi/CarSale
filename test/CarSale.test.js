@@ -14,8 +14,8 @@ let carSale;
 beforeEach(async () => {
     accounts = await web3.eth.getAccounts();
     factory = await new web3.eth.Contract(JSON.parse(compiledFactory.interface))
-        .deploy({ data: compiledFactory.bytecode })
-        .send({ from: accounts[0], gas: "2000000" });
+        .deploy({data: compiledFactory.bytecode})
+        .send({from: accounts[0], gas: "2000000"});
 
     await factory.methods.createCarSale("Toyota", "Yaris", "AB-CDE-12345", 2012).send({
         from: accounts[0],
@@ -142,7 +142,10 @@ describe("CarSale", () => {
             const _mileage = 13000;
             await carSale.methods.putUpForSale(_mileage, _price, _comment).send({from: accounts[0], gas: "2000000"});
             await carSale.methods.buy().send({from: accounts[1], gas: "2000000", value: _price});
-            await carSale.methods.putUpForSale(_mileage - 1000, _price, _comment).send({from: accounts[1], gas: "2000000"});
+            await carSale.methods.putUpForSale(_mileage - 1000, _price, _comment).send({
+                from: accounts[1],
+                gas: "2000000"
+            });
             assert(false);
         } catch (err) {
             assert(err);
